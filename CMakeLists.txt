@@ -23,7 +23,7 @@ target_link_directories(SudokuProject PRIVATE
 # Bật định nghĩa Macro STATIC cho Compiler biết
 target_compile_definitions(SudokuProject PRIVATE SFML_STATIC)
 
-# ĐƯỜNG LỐI MỚI: Bỏ hoàn toàn find_package(Freetype) và find_package(SFML) 
+ 
 # vì chúng phá hỏng cấu trúc do lỗi file cấu hình đi kèm gói tải về.
 # Chúng ta sẽ link trực tiếp bằng tên file tĩnh (.a) có sẵn trong folder lib của bạn.
 
