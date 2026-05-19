@@ -44,3 +44,6 @@ x86/
 *.suo
 *.VC.db
 *.VC.VC.opendb
+SudokuProject.sln
+SudokuProject.vcxproj
+SudokuProject.vcxproj.filters
