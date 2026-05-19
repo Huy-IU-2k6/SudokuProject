@@ -47,3 +47,6 @@ x86/
 SudokuProject.sln
 SudokuProject.vcxproj
 SudokuProject.vcxproj.filters
+/build/
+/out/
+.vscode/
