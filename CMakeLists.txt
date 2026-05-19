@@ -38,7 +38,6 @@ target_link_libraries(SudokuProject PRIVATE
     gdi32
     user32
 )
-
 # Tự động copy thư mục assets vào chung chỗ với file .exe khi build
 add_custom_command(TARGET SudokuProject POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
