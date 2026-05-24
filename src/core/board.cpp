@@ -1,19 +1,18 @@
-#include "board.h"
-#include <iostream>
+#include "core/board.h"
 
 Board::Board() {
-    initDummyBoard();
+    for (int row = 0; row < 9; ++row) {
+        for (int col = 0; col < 9; ++col) {
+            grid[row][col].value = std::nullopt; // Khai báo rõ ràng là ô trống
+            grid[row][col].is_wrong = false;
+        }
+    }
+
+    // Dữ liệu test hiển thị
+    grid[0][0].value = 3;  // std::optional tự động bọc số 3 lại
+    grid[0][0].is_wrong = true;
 }
 
-void Board::initDummyBoard() {
-    // Thử điền vài số mặc định để test xem lên hình đúng không
-    grid[0][0].value = 5;
-    grid[0][0].is_fixed = true;
-
-    grid[0][1].value = 3;
-    grid[0][1].is_wrong = true; // Thử nghiệm ô điền sai để GUI vẽ màu đỏ
-}
-
-Cell Board::getCell(int r, int c) const {
-    return grid[r][c];
+Cell Board::getCell(int row, int col) const {
+    return grid[row][col];
 }
