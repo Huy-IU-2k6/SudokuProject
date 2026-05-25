@@ -9,6 +9,8 @@ GameUI::GameUI(const sf::Font& font)
     , mTimeText(font) 
     , mNewGameButton(nullptr)
     , mNewGameCallback(nullptr)
+    , mNumpadCallback(nullptr)
+    , mActionCallback(nullptr)
 {
 }
 
@@ -48,8 +50,11 @@ void GameUI::initActionButtons() {
         btn->setPosition({posX, posY});
         
         std::string name = actionNames[i];
-        btn->setCallback([name]() {
-            std::cout << "Action activated: " << name << "\n";
+        btn->setCallback([this, name]() {
+            // Phát tín hiệu hành động (Undo, Erase...) ra bên ngoài
+            if (mActionCallback) {
+                mActionCallback(name);
+            }
         });
 
         mActionButtons.push_back(std::move(btn));
@@ -70,8 +75,11 @@ void GameUI::initNumpad() {
         btn->setPosition({posX, posY});
 
         int number = i + 1;
-        btn->setCallback([number]() {
-            std::cout << "Number selected: " << number << "\n";
+        btn->setCallback([this, number]() {
+            // Phát tín hiệu con số vừa bấm (1-9) ra bên ngoài
+            if (mNumpadCallback) {
+                mNumpadCallback(number);
+            }
         });
 
         mNumpadButtons.push_back(std::move(btn));
@@ -94,6 +102,14 @@ void GameUI::initNewGameButton() {
 
 void GameUI::setNewGameCallback(std::function<void()> callback) {
     mNewGameCallback = std::move(callback);
+}
+
+void GameUI::setNumpadCallback(std::function<void(int)> callback) {
+    mNumpadCallback = std::move(callback);
+}
+
+void GameUI::setActionCallback(std::function<void(const std::string&)> callback) {
+    mActionCallback = std::move(callback);
 }
 
 void GameUI::setMistakes(int mistakes, int maxMistakes) {

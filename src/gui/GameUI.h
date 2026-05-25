@@ -22,6 +22,8 @@ public:
     
     // HÀM QUAN TRỌNG: Dùng để kết nối với StateStack
     void setNewGameCallback(std::function<void()> callback);
+    void setNumpadCallback(std::function<void(int)> callback);
+    void setActionCallback(std::function<void(const std::string&)> callback);
 
 private:
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
@@ -41,8 +43,10 @@ private:
     std::vector<std::unique_ptr<Button>> mNumpadButtons;
     std::unique_ptr<Button> mNewGameButton;
     
-    // Biến lưu trữ hành động chuyển màn hình
+    // Các biến con trỏ hàm lưu trữ luồng sự kiện
     std::function<void()> mNewGameCallback;
+    std::function<void(int)> mNumpadCallback;
+    std::function<void(const std::string&)> mActionCallback;
 
     // --- BỐ CỤC CHUẨN UX (Giống y hệt hình chụp của bạn) ---
     static constexpr float PANEL_START_X = 660.f;  
