@@ -1,5 +1,7 @@
 #include "PlayingState.h"
 #include <iostream>
+#include <iomanip>
+#include <sstream>
 
 PlayingState::PlayingState(StateStack& stack, Context context)
     : State(stack, context)
@@ -45,6 +47,22 @@ void PlayingState::draw() {
 void PlayingState::update(const sf::RenderWindow& window) {
     mGameUI.update(window);
     mDifficultyBar.update(window);
+    // --- LOGIC CẬP NHẬT THỜI GIAN THỰC ---
+    
+    // 1. Lấy tổng số giây đã trôi qua kể từ lúc State này được tạo ra
+    int elapsedSeconds = static_cast<int>(mTimer.getElapsedTime().asSeconds());
+    
+    // 2. Quy đổi ra Phút và Giây
+    int minutes = elapsedSeconds / 60;
+    int seconds = elapsedSeconds % 60;
+
+    // 3. Ép định dạng chuỗi thành MM:SS (ví dụ: 09:05 thay vì 9:5)
+    std::ostringstream timeStream;
+    timeStream << std::setfill('0') << std::setw(2) << minutes << ":"
+               << std::setfill('0') << std::setw(2) << seconds;
+
+    // 4. Gửi chuỗi thời gian đã format sang cho UI cập nhật
+    mGameUI.setTime(timeStream.str());
 }
 
 void PlayingState::handleEvent(const sf::Event& event, const sf::RenderWindow& window) {

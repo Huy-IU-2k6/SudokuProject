@@ -8,9 +8,7 @@ Board::Board() {
         }
     }
 
-    // Dữ liệu test hiển thị
-    grid[0][0].value = 3;  // std::optional tự động bọc số 3 lại
-    grid[0][0].is_wrong = true;
+
 }
 
 Cell Board::getCell(int row, int col) const {

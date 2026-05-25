@@ -5,6 +5,7 @@
 #include "gui/GameUI.h"
 #include "gui/DifficultyBar.h"
 #include "gui/SudokuGrid.h"
+#include <SFML/System/Clock.hpp>
 
 class PlayingState : public State {
 public:
@@ -18,6 +19,7 @@ private:
     SudokuGrid mGridView;
     GUI::GameUI mGameUI;
     GUI::DifficultyBar mDifficultyBar;
+    sf::Clock mTimer;
 };
 
 #endif
