@@ -18,6 +18,10 @@ DifficultySelectionState::DifficultySelectionState(StateStack& stack, Context co
     // Khi chọn độ khó thành công
     mDifficultyMenu.setDifficultyCallback([this, context](const std::string& level) {
         std::cout << "Starting game with difficulty: " << level << "\n";
+
+        // LỆNH QUAN TRỌNG: Kích hoạt dọn dẹp sạch sẽ dữ liệu ván cũ
+        context.board->clearBoard();
+        
         // BỎ VÀO BALO: Lưu độ khó vừa chọn vào bộ nhớ chung
         *context.difficultyLevel = level;
         

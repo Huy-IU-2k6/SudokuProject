@@ -27,27 +27,35 @@ PlayingState::PlayingState(StateStack& stack, Context context)
         *context.difficultyLevel = level; 
     });
 
-    // KHI BẤM PHÍM SỐ: Không clearSelection để giữ nguyên Highlight
+    // -------------------------------------------------------------
+    // KHI BẤM PHÍM SỐ (1-9): LƯU SỐ VÀO MA TRẬN
+    // -------------------------------------------------------------
     mGameUI.setNumpadCallback([this, context](int number) {
         int row = mGridView.getSelectedRow();
         int col = mGridView.getSelectedCol();
 
         if (row != -1 && col != -1) {
-            std::cout << "Filling number " << number << " at [" << row << "][" << col << "]\n";
-        } else {
-            std::cout << "Please select a cell first!\n";
+            // LỆNH CỐT LÕI: Ghi con số vào bộ nhớ của Bảng
+            context.board->setCellValue(row, col, number);
         }
     });
 
     // KHI BẤM CÁC NÚT HÀNH ĐỘNG KHÁC: Giữ nguyên Highlight
+    // KHI BẤM CÁC NÚT HÀNH ĐỘNG (Undo, Erase, Hint, Solution)
     mGameUI.setActionCallback([this, context](const std::string& actionName) {
         int row = mGridView.getSelectedRow();
         int col = mGridView.getSelectedCol();
         
-        if (row != -1 && col != -1) {
-            std::cout << "Executing action [" << actionName << "] at [" << row << "][" << col << "]\n";
-        } else {
-            std::cout << "Executing action [" << actionName << "] (No cell selected)\n";
+        // 1. GLOBAL ACTION: Xử lý Undo (Không cần kiểm tra tọa độ ô)
+        if (actionName == "Undo") {
+            context.board->undo();
+        }
+        // 2. LOCAL ACTIONS: Xử lý các nút yêu cầu phải chọn ô trước (Erase, Hint...)
+        else if (row != -1 && col != -1) {
+            if (actionName == "Erase") {
+                context.board->clearCell(row, col);
+            }
+            // TODO: Các chức năng Hint, Solution sẽ được thêm vào đây sau
         }
     });
 }
