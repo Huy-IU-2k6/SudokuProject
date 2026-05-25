@@ -10,6 +10,8 @@ Application::Application()
     , mGridView(mBoard, mFont)
     , mGameUI(mFont) // Khởi tạo bộ UI bên phải (nhưng chưa vẽ gì cả)
     , mDifficultyBar(mFont)
+    , mMainMenu(mFont)
+    , mCurrentState(State::MainMenu) // B
 {
     mWindow.setFramerateLimit(60);
     
@@ -23,10 +25,20 @@ Application::Application()
     mGameUI.buildUI();
     // 2. BUILD UI VÀ SET TỌA ĐỘ NGAY TRÊN BẢNG SUDOKU
     mDifficultyBar.buildUI();
+    mMainMenu.buildUI({1000.f, 700.f});
     mDifficultyBar.setPosition({50.f, 30.f}); // Tọa độ X bằng bảng Sudoku, Y cao hơn một chút
+    
     // Gán hành động khi click chọn độ khó
     mDifficultyBar.setCallback([](const std::string& level) {
         std::cout << "Player changed difficulty to: " << level << "\n";
+    });
+    // Bind Button Callbacks via Lambda functions
+    mMainMenu.setStartCallback([this]() {
+        mCurrentState = State::Playing; // Switch view to playing state
+    });
+
+    mMainMenu.setExitCallback([this]() {
+        mWindow.close(); // Terminate application safely
     });
 
     // BƯỚC 3: Ép bảng Sudoku sang góc trái (Cách viền x=50, y=80)
@@ -37,9 +49,13 @@ void Application::run() {
     while (mWindow.isOpen()) {
         processEvents();
         
-        // Cập nhật trạng thái đổi màu Hover của tất cả các nút
-        mGameUI.update(mWindow); 
-        mDifficultyBar.update(mWindow);
+        // Update components selectively according to the active scene state
+        if (mCurrentState == State::MainMenu) {
+            mMainMenu.update(mWindow);
+        } else if (mCurrentState == State::Playing) {
+            mGameUI.update(mWindow); 
+            mDifficultyBar.update(mWindow);
+        }
 
         render();
     }
@@ -81,9 +97,13 @@ void Application::processEvents() {
             mWindow.setView(view);
         }
 
-        // Truyền sự kiện xuống UI để bắt click chuột
-        mGameUI.handleEvent(*event, mWindow);
-        mDifficultyBar.handleEvent(*event, mWindow); // <-- 4. XỬ LÝ SỰ KIỆN CLICK
+       // Delegate events to the appropriate scene handler
+        if (mCurrentState == State::MainMenu) {
+            mMainMenu.handleEvent(*event, mWindow);
+        } else if (mCurrentState == State::Playing) {
+            mGameUI.handleEvent(*event, mWindow);
+            mDifficultyBar.handleEvent(*event, mWindow);
+        }
     }
 }
 
@@ -104,8 +124,12 @@ void Application::render() {
     mWindow.setView(currentView);
 
     // Vẽ Game như bình thường
-    mWindow.draw(mGridView);
-    mWindow.draw(mGameUI);
-    mWindow.draw(mDifficultyBar);
+    if (mCurrentState == State::MainMenu) {
+        mWindow.draw(mMainMenu);
+    } else if (mCurrentState == State::Playing) {
+        mWindow.draw(mGridView);
+        mWindow.draw(mGameUI);
+        mWindow.draw(mDifficultyBar);
+    }
     mWindow.display();
 }
