@@ -17,6 +17,8 @@ public:
     
     void buildUI();
     void setCallback(Callback callback);
+    // THÊM HÀM NÀY: Ép thanh UI hiển thị đúng độ khó được truyền vào
+    void setActiveDifficulty(const std::string& level);
     
     void update(const sf::RenderWindow& window);
     void handleEvent(const sf::Event& event, const sf::RenderWindow& window);

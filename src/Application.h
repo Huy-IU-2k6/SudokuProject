@@ -3,10 +3,8 @@
 
 #include <SFML/Graphics.hpp>
 #include "core/board.h"
-#include "gui/SudokuGrid.h"
-#include "gui/GameUI.h"
-#include "gui/DifficultyBar.h"
-#include "gui/MainMenu.h"
+#include "gui/StateStack.h"
+#include <string>
 
 class Application {
 public:
@@ -16,19 +14,14 @@ public:
 private:
     void processEvents();
     void render();
-    enum class State {
-        MainMenu,
-        Playing
-    };
-    
+    void registerStates();
+
+private:
     sf::RenderWindow mWindow;
-    sf::Font mFont;         // Nạp font chữ 1 lần ở đây
-    Board mBoard;           // Bảng chứa dữ liệu thật (Logic)
-    SudokuGrid mGridView; 
-    GUI::GameUI mGameUI;  // Chịu trách nhiệm vẽ bảng (GUI)
-    GUI::DifficultyBar mDifficultyBar; // <-- DÒNG MỚI NÀY
-    GUI::MainMenu mMainMenu; // <-- DÒNG MỚI NÀY
-    State mCurrentState;
+    sf::Font mFont;         
+    Board mBoard;    
+    std::string mCurrentDifficulty;       
+    StateStack mStateStack; // The ultimate state manager
 };
 
 #endif

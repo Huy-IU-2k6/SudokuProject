@@ -114,5 +114,15 @@ void DifficultyBar::draw(sf::RenderTarget& target, sf::RenderStates states) cons
         target.draw(opt.text, states);
     }
 }
+void DifficultyBar::setActiveDifficulty(const std::string& level) {
+    for (size_t i = 0; i < mOptions.size(); ++i) {
+        if (mOptions[i].name == level) {
+            mSelectedIndex = i;
+            mOptions[i].text.setFillColor(COLOR_SELECTED);
+        } else {
+            mOptions[i].text.setFillColor(COLOR_NORMAL);
+        }
+    }
+}
 
 }

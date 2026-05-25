@@ -8,6 +8,7 @@ GameUI::GameUI(const sf::Font& font)
     , mMistakesText(font) 
     , mTimeText(font) 
     , mNewGameButton(nullptr)
+    , mNewGameCallback(nullptr)
 {
 }
 
@@ -34,16 +35,14 @@ void GameUI::initActionButtons() {
     float startY = PANEL_START_Y + 110.f;
     std::vector<std::string> actionNames = {"Undo", "Erase", "Hint", "Solution"};
 
-    // 2x2 grid layout algorithm for the 4 action buttons
     for (size_t i = 0; i < actionNames.size(); ++i) {
-        int row = i / 2; // Row 0 or 1
-        int col = i % 2; // Column 0 or 1
+        int row = i / 2; 
+        int col = i % 2; 
 
         auto btn = std::make_unique<Button>(mFont);
         btn->setButtonSize({ACT_BTN_WIDTH, ACT_BTN_HEIGHT});
         btn->setText(actionNames[i]);
 
-        // Calculate coordinates based on row and column positions
         float posX = PANEL_START_X + col * (ACT_BTN_WIDTH + ACT_SPACING_X);
         float posY = startY + row * (ACT_BTN_HEIGHT + ACT_SPACING_Y);
         btn->setPosition({posX, posY});
@@ -72,7 +71,7 @@ void GameUI::initNumpad() {
 
         int number = i + 1;
         btn->setCallback([number]() {
-            std::cout << "Number selected for cell: " << number << "\n";
+            std::cout << "Number selected: " << number << "\n";
         });
 
         mNumpadButtons.push_back(std::move(btn));
@@ -85,9 +84,16 @@ void GameUI::initNewGameButton() {
     mNewGameButton->setText("New Game");
     mNewGameButton->setPosition({PANEL_START_X, NEW_GAME_START_Y});
     
-    mNewGameButton->setCallback([]() {
-        std::cout << "Starting new game!\n";
+    // NỐI DÂY CALLBACK Ở ĐÂY: Khi bấm nút sẽ gọi về PlayingState
+    mNewGameButton->setCallback([this]() {
+        if (mNewGameCallback) {
+            mNewGameCallback(); // Phát tín hiệu chuyển màn hình
+        }
     });
+}
+
+void GameUI::setNewGameCallback(std::function<void()> callback) {
+    mNewGameCallback = std::move(callback);
 }
 
 void GameUI::setMistakes(int mistakes, int maxMistakes) {
