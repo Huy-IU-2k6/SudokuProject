@@ -59,12 +59,19 @@ PlayingState::PlayingState(StateStack& stack, Context context)
         if (actionName == "Undo") {
             context.board->undo();
         }
+        else if (actionName == "Solution") {
+            context.board->revealSolution();
+            mGridView.clearSelection(); // Hiển thị đáp án xong thì xóa highlight
+        }
         // 2. LOCAL ACTIONS: Xử lý các nút yêu cầu phải chọn ô trước (Erase, Hint...)
         else if (row != -1 && col != -1) {
             if (actionName == "Erase") {
                 context.board->clearCell(row, col);
             }
             // TODO: Các chức năng Hint, Solution sẽ được thêm vào đây sau
+            else if (actionName == "Hint") {
+                context.board->revealHint(row, col);
+            }
         }
     });
     // SETUP LOADING TEXT
@@ -115,6 +122,7 @@ void PlayingState::update(const sf::RenderWindow& window) {
         }
     } else {
         // CHỈ CẬP NHẬT GAME BÌNH THƯỜNG KHI ĐÃ LOAD XONG
+        mGameUI.setMistakes(getContext().board->getMistakes(), 3);
         mGameUI.update(window);
         mDifficultyBar.update(window);
         
@@ -132,6 +140,9 @@ void PlayingState::update(const sf::RenderWindow& window) {
 }
 
 void PlayingState::handleEvent(const sf::Event& event, const sf::RenderWindow& window) {
+    // Chặn click bậy khi game đang Load
+    if (mIsGenerating) return;
+    
     // 1. Chuyển giao sự kiện click cho các UI
     mGameUI.handleEvent(event, window);
     mDifficultyBar.handleEvent(event, window);

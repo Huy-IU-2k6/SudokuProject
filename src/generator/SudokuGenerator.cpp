@@ -16,14 +16,25 @@ Board SudokuGenerator::generate(std::string difficulty) {
     int minScore, maxScore;
     getTargetScoreRange(difficulty, minScore, maxScore);
 
-    // Đã có AC-3, tốc độ tính bằng mili-giây nên ta tăng Retries lên 50 để AI thoải mái tìm bảng Master
     int maxRetries = 50; 
     Board bestBoard;
     int bestScore = -1;
 
     while (maxRetries-- > 0) {
         Board board;
-        fillBoard(board);
+        
+        // CHỈ GỌI 1 LẦN DUY NHẤT: Nếu AI điền bảng thất bại, bỏ đi làm lại ván khác!
+        if (!fillBoard(board)) {
+            continue; 
+        }
+
+        // BẢO VỆ TUYỆT ĐỐI: Dùng value_or(0) để C++ không bao giờ ném lỗi Crash
+        int solutionCache[9][9] = {0};
+        for (int r = 0; r < 9; ++r) {
+            for (int c = 0; c < 9; ++c) {
+                solutionCache[r][c] = board.getCell(r, c).value.value_or(0);
+            }
+        }
 
         std::vector<std::pair<int, int>> cells;
         for (int r = 0; r < 9; ++r) {
@@ -36,11 +47,15 @@ Board SudokuGenerator::generate(std::string difficulty) {
         for (auto pos : cells) {
             int r = pos.first;
             int c = pos.second;
-            int backupVal = board.getCell(r, c).value.value();
-
+            
+            auto cellOpt = board.getCell(r, c).value;
+            if (!cellOpt.has_value()) continue;
+            
+            // BẢO VỆ: Dùng value_or
+            int backupVal = cellOpt.value_or(0);
+            
             board.clearCell(r, c);
 
-            // BỘ ĐẾM NGHIỆM AC-3 HOẠT ĐỘNG TẠI ĐÂY
             if (countSolutions(board) != 1) {
                 board.setCellValue(r, c, backupVal); 
                 continue; 
@@ -48,17 +63,29 @@ Board SudokuGenerator::generate(std::string difficulty) {
 
             Board copyBoard = board;
             SolverStats stats;
-            SudokuSolver::solve(copyBoard, stats); // Solver mô phỏng người chơi để đo độ khó
+            SudokuSolver::solve(copyBoard, stats); 
             int currentScore = stats.calculateDifficultyScore();
 
             if (currentScore > bestScore) {
                 bestScore = currentScore;
                 bestBoard = board;
+                
+                // Đảm bảo bảng dự phòng cũng có đáp án để xài nút Hint
+                for (int i = 0; i < 9; ++i) {
+                    for (int j = 0; j < 9; ++j) {
+                        bestBoard.setSolutionValue(i, j, solutionCache[i][j]);
+                    }
+                }
             }
 
             if (currentScore >= minScore && currentScore <= maxScore) {
-                board.prepareGame(); // THÊM DÒNG NÀY: Khóa đề bài và dọn sạch Stack Undo
-                return board;
+                for (int i = 0; i < 9; ++i) {
+                    for (int j = 0; j < 9; ++j) {
+                        board.setSolutionValue(i, j, solutionCache[i][j]);
+                    }
+                }
+                board.prepareGame(); 
+                return board; 
             }
             
             if (currentScore > maxScore) {
@@ -96,9 +123,6 @@ bool SudokuGenerator::fillBoard(Board& board) {
     return false;
 }
 
-// ====================================================================
-// KHỐI THUẬT TOÁN AC-3 VÀ BITWISE CẮT TỈA TỐI HƯU HIỆU NĂNG 
-// ====================================================================
 namespace {
     inline int countBits(uint16_t n) {
         int count = 0;
@@ -106,8 +130,6 @@ namespace {
         return count;
     }
 
-    // 1. THUẬT TOÁN AC-3 (Arc Consistency 3) 
-    // Dùng Hàng đợi (Queue) để lan truyền ràng buộc dây chuyền
     bool propagateAC3(uint16_t domains[81], std::vector<int>& queue) {
         while (!queue.empty()) {
             int curr = queue.back();
@@ -118,29 +140,23 @@ namespace {
             int c = curr % 9;
             int b = (r / 3) * 3 + (c / 3);
 
-            // Thu thập các ô bị ảnh hưởng (Peers)
             int peers[24];
             int peerCount = 0;
             for (int i = 0; i < 9; ++i) {
                 int pr = r, pc = i;
-                if (pc != c) peers[peerCount++] = pr * 9 + pc; // Cùng hàng
+                if (pc != c) peers[peerCount++] = pr * 9 + pc; 
                 pr = i, pc = c;
-                if (pr != r) peers[peerCount++] = pr * 9 + pc; // Cùng cột
+                if (pr != r) peers[peerCount++] = pr * 9 + pc; 
                 pr = (b / 3) * 3 + (i / 3);
                 pc = (b % 3) * 3 + (i % 3);
-                if (pr != r && pc != c) peers[peerCount++] = pr * 9 + pc; // Cùng khối 3x3
+                if (pr != r && pc != c) peers[peerCount++] = pr * 9 + pc; 
             }
 
-            // Tiến hành quét AC-3
             for (int i = 0; i < peerCount; ++i) {
                 int peer = peers[i];
-                if (domains[peer] & val) { // Nếu ô hàng xóm chứa giá trị này trong tập hợp
-                    domains[peer] &= ~val; // Xóa giá trị đó đi
-                    
-                    if (domains[peer] == 0) return false; // Ngõ cụt -> Suy luận sai
-                    
-                    // MA THUẬT CỦA AC-3 NẰM Ở ĐÂY:
-                    // Nếu sau khi xóa, ô đó chỉ còn đúng 1 lựa chọn -> Bơm lại vào Queue để lan truyền tiếp!
+                if (domains[peer] & val) { 
+                    domains[peer] &= ~val; 
+                    if (domains[peer] == 0) return false; 
                     if (countBits(domains[peer]) == 1) {
                         queue.push_back(peer); 
                     }
@@ -150,11 +166,9 @@ namespace {
         return true;
     }
 
-    // 2. BACKTRACKING ĐẾM NGHIỆM KẾT HỢP MRV VÀ AC-3
     void fastCountSolutionsAC3(uint16_t domains[81], int& count) {
         if (count >= 2) return; 
 
-        // Heuristic MRV: Tìm ô còn ít lựa chọn nhất
         int bestCell = -1;
         int minOptions = 10;
         for (int i = 0; i < 81; ++i) {
@@ -162,11 +176,10 @@ namespace {
             if (opts > 1 && opts < minOptions) {
                 minOptions = opts;
                 bestCell = i;
-                if (opts == 2) break; // 2 lựa chọn là tốt nhất có thể, ngắt vòng lặp tìm kiếm
+                if (opts == 2) break; 
             }
         }
 
-        // Bảng đã được giải kín
         if (bestCell == -1) { 
             count++;
             return;
@@ -176,7 +189,6 @@ namespace {
         for (int num = 1; num <= 9; ++num) {
             int bit = 1 << (num - 1);
             if (available & bit) {
-                // Tạo một bản sao vùng nhớ để chạy AC-3 giả lập (Look-ahead)
                 uint16_t nextDomains[81];
                 std::copy(domains, domains + 81, nextDomains);
                 
@@ -184,11 +196,10 @@ namespace {
                 std::vector<int> q;
                 q.push_back(bestCell);
                 
-                // Nếu AC-3 lan truyền thành công không gặp ngõ cụt thì mới đi sâu đệ quy
                 if (propagateAC3(nextDomains, q)) {
                     fastCountSolutionsAC3(nextDomains, count);
                 }
-                if (count >= 2) return; // Thoát sớm
+                if (count >= 2) return; 
             }
         }
     }
@@ -196,22 +207,22 @@ namespace {
 
 int SudokuGenerator::countSolutions(Board board) {
     uint16_t domains[81];
-    for (int i = 0; i < 81; ++i) domains[i] = 0x1FF; // 0x1FF = 9 bits 1 = {1,2,3,4,5,6,7,8,9}
+    for (int i = 0; i < 81; ++i) domains[i] = 0x1FF; 
 
     std::vector<int> queue;
     
-    // Đọc bảng hiện tại, quy đổi sang Bitmask và cho hết các ô đã điền vào hàng đợi AC-3
     for (int r = 0; r < 9; ++r) {
         for (int c = 0; c < 9; ++c) {
             if (board.getCell(r, c).value.has_value()) {
                 int idx = r * 9 + c;
-                domains[idx] = 1 << (board.getCell(r, c).value.value() - 1);
+                // BẢO VỆ: Dùng value_or(1)
+                int val = board.getCell(r, c).value.value_or(1);
+                domains[idx] = 1 << (val - 1);
                 queue.push_back(idx);
             }
         }
     }
 
-    // Nếu bảng hiện tại vốn đã sai ràng buộc, trả về 0 nghiệm
     if (!propagateAC3(domains, queue)) return 0; 
 
     int count = 0;
@@ -239,39 +250,11 @@ bool SudokuGenerator::isValid(const Board& board, int r, int c, int num) {
 }
 
 void SudokuGenerator::getTargetScoreRange(const std::string& difficulty, int& minScore, int& maxScore) {
-    // CÔNG THỨC: Điểm = Số ô trống (maxDepth) * 15 + Số lần đoán mò (Backtrack) * 8
-    
-    if (difficulty == "Easy") { 
-        // Bắt buộc phải xóa ít nhất ~30 ô (30 * 15 = 450) mới được dừng
-        minScore = 450;    
-        maxScore = 600; 
-    }
-    else if (difficulty == "Medium") { 
-        // Khoảng 42 - 48 ô trống, bắt đầu có 1-2 lần đoán mò
-        minScore = 650;  
-        maxScore = 800; 
-    }
-    else if (difficulty == "Hard") { 
-        // Khoảng 50 - 55 ô trống, cần đoán mò nhiều hơn
-        minScore = 850;  
-        maxScore = 1100; 
-    }
-    else if (difficulty == "Expert") { 
-        minScore = 1200; 
-        maxScore = 2000; 
-    }
-    else if (difficulty == "Master") { 
-        minScore = 2200; 
-        maxScore = 5000; 
-    }
-    else if (difficulty == "Extreme") { 
-        // Giới hạn siêu khó của Sudoku, xóa đến mức gần mất nghiệm duy nhất
-        minScore = 5001; 
-        maxScore = 999999; 
-    }
-    else { 
-        // Mặc định là Easy nếu lỗi chuỗi
-        minScore = 450;    
-        maxScore = 600; 
-    } 
+    if (difficulty == "Easy") { minScore = 450; maxScore = 600; }
+    else if (difficulty == "Medium") { minScore = 650; maxScore = 800; }
+    else if (difficulty == "Hard") { minScore = 850; maxScore = 1100; }
+    else if (difficulty == "Expert") { minScore = 1200; maxScore = 2000; }
+    else if (difficulty == "Master") { minScore = 2200; maxScore = 5000; }
+    else if (difficulty == "Extreme") { minScore = 5001; maxScore = 999999; }
+    else { minScore = 450; maxScore = 600; } 
 }

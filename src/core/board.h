@@ -6,15 +6,14 @@
 
 struct Cell {
     std::optional<int> value; 
-    bool is_fixed = false; // true nếu là số đề bài cho sẵn (khóa cứng không cho sửa/xóa)
+    bool is_fixed = false; // true nếu là số đề bài cho sẵn (khóa cứng)
     bool is_wrong = false; // true nếu người chơi điền sai luật
 };
 
-// Cấu trúc đóng gói dữ liệu phục vụ tính năng Hoàn tác
 struct MoveRecord {
     int row;
     int col;
-    std::optional<int> prevValue; // Giá trị cũ trước khi bị can thiệp
+    std::optional<int> prevValue; 
 };
 
 class Board {
@@ -25,13 +24,22 @@ public:
     void setCellValue(int row, int col, int val);
     void clearCell(int row, int col);
     
-    void undo();       // Hoàn tác nước đi của người chơi
-    void clearBoard(); // Đưa ma trận về trạng thái trống hoàn toàn
-    void prepareGame(); // Khóa số đề bài và làm sạch lịch sử tạo bảng của AI
+    void undo();       
+    void clearBoard(); 
+    void prepareGame(); 
+
+    // 3 HÀM MỚI PHỤC VỤ HINT VÀ SOLUTION
+    void setSolutionValue(int row, int col, int val); 
+    void revealHint(int row, int col);
+    void revealSolution();
+    int getMistakes() const;
 
 private:
     Cell grid[9][9];
-    std::vector<MoveRecord> mUndoStack; // Ngăn xếp lưu lịch sử nước đi
+    std::vector<MoveRecord> mUndoStack; 
+    
+    int mSolution[9][9] = {0}; // Mảng bí mật chứa đáp án
+    int mMistakes = 0;         // Bộ đếm lỗi
 };
 
 #endif

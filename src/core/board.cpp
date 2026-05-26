@@ -10,23 +10,27 @@ Cell Board::getCell(int row, int col) const {
 
 void Board::setCellValue(int row, int col, int val) {
     if (row >= 0 && row < 9 && col >= 0 && col < 9) {
-        // NGĂN CHẶN: Nếu là ô cố định của đề bài thì tuyệt đối không cho ghi đè
         if (grid[row][col].is_fixed) return; 
         if (grid[row][col].value == val) return;
 
-        // Lưu trạng thái trước khi thay đổi vào Stack
         mUndoStack.push_back({row, col, grid[row][col].value});
         grid[row][col].value = val;
+        
+        // KIỂM TRA ĐÁP ÁN: Khác đáp án thì bật cờ đỏ và cộng lỗi
+        if (val != mSolution[row][col]) {
+            grid[row][col].is_wrong = true;
+            mMistakes++;
+        } else {
+            grid[row][col].is_wrong = false;
+        }
     }
 }
 
 void Board::clearCell(int row, int col) {
     if (row >= 0 && row < 9 && col >= 0 && col < 9) {
-        // NGĂN CHẶN: Không cho phép dùng cục tẩy xóa số mặc định của đề bài
         if (grid[row][col].is_fixed) return; 
         if (!grid[row][col].value.has_value()) return;
 
-        // Lưu trạng thái trước khi xóa vào Stack
         mUndoStack.push_back({row, col, grid[row][col].value});
         grid[row][col].value = std::nullopt; 
         grid[row][col].is_wrong = false;
@@ -36,11 +40,9 @@ void Board::clearCell(int row, int col) {
 void Board::undo() {
     if (mUndoStack.empty()) return; 
 
-    // Lấy nước đi gần nhất trên đỉnh Stack ra và loại bỏ nó khỏi ngăn xếp
     MoveRecord lastMove = mUndoStack.back();
     mUndoStack.pop_back();
 
-    // Khôi phục lại giá trị nguyên bản
     grid[lastMove.row][lastMove.col].value = lastMove.prevValue;
     grid[lastMove.row][lastMove.col].is_wrong = false;
 }
@@ -54,17 +56,51 @@ void Board::clearBoard() {
         }
     }
     mUndoStack.clear();
+    mMistakes = 0; // RESET LỖI
 }
 
 void Board::prepareGame() {
-    // 1. Quét qua toàn bộ ma trận, ô nào đang chứa số thì khóa cứng lại
     for (int row = 0; row < 9; ++row) {
         for (int col = 0; col < 9; ++col) {
             if (grid[row][col].value.has_value()) {
                 grid[row][col].is_fixed = true;
+                // TẨY TRẮNG 1: Đề bài mặc định thì chắc chắn phải đúng, không thể bị đỏ!
+                grid[row][col].is_wrong = false;
             }
         }
     }
-    // 2. XÓA SẠCH VẾT TÍNH TOÁN CỦA AI: Trả lại một Stack trống hoàn toàn cho người chơi
     mUndoStack.clear(); 
+    // TẨY TRẮNG 3: Reset toàn bộ án tích (số lỗi) AI vừa gây ra về 0
+    mMistakes = 0;
+}
+
+void Board::setSolutionValue(int row, int col, int val) {
+    mSolution[row][col] = val;
+}
+
+void Board::revealHint(int row, int col) {
+    if (row >= 0 && row < 9 && col >= 0 && col < 9) {
+        if (grid[row][col].is_fixed) return; 
+        
+        mUndoStack.push_back({row, col, grid[row][col].value}); 
+        grid[row][col].value = mSolution[row][col]; 
+        grid[row][col].is_wrong = false;
+        grid[row][col].is_fixed = true; 
+    }
+}
+
+void Board::revealSolution() {
+    for (int row = 0; row < 9; ++row) {
+        for (int col = 0; col < 9; ++col) {
+            if (!grid[row][col].is_fixed) {
+                grid[row][col].value = mSolution[row][col];
+                grid[row][col].is_wrong = false;
+                grid[row][col].is_fixed = true; 
+            }
+        }
+    }
+}
+
+int Board::getMistakes() const {
+    return mMistakes;
 }

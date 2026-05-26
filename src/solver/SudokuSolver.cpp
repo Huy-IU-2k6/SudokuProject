@@ -4,13 +4,13 @@
 bool SudokuSolver::solve(Board& board, SolverStats& stats) {
     uint16_t rows[9] = {0}, cols[9] = {0}, blocks[9] = {0};
 
-    // 1. Khoi tao trang thai Bitmask ban dau tu Board hien tai
     for (int r = 0; r < 9; ++r) {
         for (int c = 0; c < 9; ++c) {
             auto cellVal = board.getCell(r, c).value;
             if (cellVal.has_value()) {
-                int val = cellVal.value();
-                int bit = 1 << (val - 1); // Dich bit tuong ung voi so (1-9)
+                // BẢO VỆ: Thay vì .value(), hãy dùng .value_or(1)
+                int val = cellVal.value_or(1); 
+                int bit = 1 << (val - 1); 
                 rows[r] |= bit;
                 cols[c] |= bit;
                 blocks[getBlockIndex(r, c)] |= bit;
@@ -18,9 +18,9 @@ bool SudokuSolver::solve(Board& board, SolverStats& stats) {
         }
     }
 
-    // 2. Bat dau de quy
     return backtrack(board, rows, cols, blocks, 0, stats);
 }
+// Các hàm bên dưới giữ nguyên...
 
 bool SudokuSolver::findMRVCell(const Board& board, const uint16_t rows[], const uint16_t cols[], const uint16_t blocks[], int& bestRow, int& bestCol) {
     int minCandidates = 10; 
