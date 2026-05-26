@@ -6,6 +6,7 @@
 #include "gui/DifficultyBar.h"
 #include "gui/SudokuGrid.h"
 #include <SFML/System/Clock.hpp>
+#include <future>
 
 class PlayingState : public State {
 public:
@@ -20,6 +21,9 @@ private:
     GUI::GameUI mGameUI;
     GUI::DifficultyBar mDifficultyBar;
     sf::Clock mTimer;
+    sf::Text mLoadingText;               // Chữ báo hiệu đang load
+    std::future<Board> mFutureBoard;     // Tờ giấy hẹn lấy Board
+    bool mIsGenerating = false;          // Cờ kiểm tra trạng thái
 };
 
 #endif

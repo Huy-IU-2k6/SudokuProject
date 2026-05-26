@@ -2,12 +2,14 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include "generator/SudokuGenerator.h"
 
 PlayingState::PlayingState(StateStack& stack, Context context)
     : State(stack, context)
     , mGridView(*context.board, *context.font)
     , mGameUI(*context.font)
     , mDifficultyBar(*context.font)
+    , mLoadingText(*context.font)
 {
     // Dựng các thành phần giao diện
     mGameUI.buildUI();
@@ -22,9 +24,16 @@ PlayingState::PlayingState(StateStack& stack, Context context)
         requestStackPush("DifficultySelection");
     });
     
-    mDifficultyBar.setCallback([context](const std::string& level) {
+    mDifficultyBar.setCallback([this, context](const std::string& level) {
         std::cout << "Player swapped difficulty to: " << level << "\n";
         *context.difficultyLevel = level; 
+
+        // KÍCH HOẠT LẠI ĐA LUỒNG: Sinh ma trận mới ngay khi bấm nút đổi độ khó
+        mFutureBoard = SudokuGenerator::generateAsync(level);
+        mIsGenerating = true;
+
+        // Xóa trạng thái ô đang chọn cũ để tránh lỗi hiển thị highlight
+        mGridView.clearSelection();
     });
 
     // -------------------------------------------------------------
@@ -58,6 +67,18 @@ PlayingState::PlayingState(StateStack& stack, Context context)
             // TODO: Các chức năng Hint, Solution sẽ được thêm vào đây sau
         }
     });
+    // SETUP LOADING TEXT
+    mLoadingText.setFont(*context.font);
+    mLoadingText.setString("Generating Puzzle...\nPlease wait...");
+    mLoadingText.setCharacterSize(40);
+    mLoadingText.setFillColor(sf::Color(80, 80, 80));
+    mLoadingText.setPosition({200.f, 300.f}); // Đặt tạm ra giữa màn hình
+
+    // KÍCH HOẠT ĐA LUỒNG TẠI ĐÂY:
+    // Đẩy tác vụ tạo map xuống Background Thread ngay khi vào màn hình chơi
+    mFutureBoard = SudokuGenerator::generateAsync(*context.difficultyLevel);
+    mIsGenerating = true; 
+
 }
 
 void PlayingState::draw() {
@@ -68,25 +89,46 @@ void PlayingState::draw() {
     background.setFillColor(sf::Color(250, 250, 250));
     window.draw(background);
 
-    window.draw(mGridView);
-    window.draw(mGameUI);
-    window.draw(mDifficultyBar);
+    if (mIsGenerating) {
+        window.draw(mLoadingText);
+    } else {
+        window.draw(mGridView);
+        window.draw(mGameUI);
+        window.draw(mDifficultyBar);
+    }
 }
 
 void PlayingState::update(const sf::RenderWindow& window) {
-    mGameUI.update(window);
-    mDifficultyBar.update(window);
-    
-    // Logic đếm thời gian
-    int elapsedSeconds = static_cast<int>(mTimer.getElapsedTime().asSeconds());
-    int minutes = elapsedSeconds / 60;
-    int seconds = elapsedSeconds % 60;
+    if (mIsGenerating) {
+        // KIỂM TRA LUỒNG (POLLING): Xem Background Thread đã chạy xong chưa?
+        // Đợi 0 giây (Check non-blocking) để game không bị đơ
+        if (mFutureBoard.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+            
+            // 1. NHẬN KẾT QUẢ: Lấy bảng Sudoku hoàn chỉnh từ Thread đẩy vào Bảng chính
+            *getContext().board = mFutureBoard.get(); 
 
-    std::ostringstream timeStream;
-    timeStream << std::setfill('0') << std::setw(2) << minutes << ":"
-               << std::setfill('0') << std::setw(2) << seconds;
+            // 2. MỞ KHÓA MÀN HÌNH: Tắt cờ Loading, reset đồng hồ bắt đầu tính giờ chơi
+            mIsGenerating = false;
+            mTimer.restart(); 
+            
+            std::cout << "Generation Complete!\n"; // Báo ra Console để bạn dễ theo dõi
+        }
+    } else {
+        // CHỈ CẬP NHẬT GAME BÌNH THƯỜNG KHI ĐÃ LOAD XONG
+        mGameUI.update(window);
+        mDifficultyBar.update(window);
+        
+        // Logic đếm thời gian
+        int elapsedSeconds = static_cast<int>(mTimer.getElapsedTime().asSeconds());
+        int minutes = elapsedSeconds / 60;
+        int seconds = elapsedSeconds % 60;
 
-    mGameUI.setTime(timeStream.str());
+        std::ostringstream timeStream;
+        timeStream << std::setfill('0') << std::setw(2) << minutes << ":"
+                   << std::setfill('0') << std::setw(2) << seconds;
+
+        mGameUI.setTime(timeStream.str());
+    }
 }
 
 void PlayingState::handleEvent(const sf::Event& event, const sf::RenderWindow& window) {
