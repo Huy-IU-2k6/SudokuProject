@@ -10,6 +10,8 @@ PlayingState::PlayingState(StateStack& stack, Context context)
     , mGameUI(*context.font)
     , mDifficultyBar(*context.font)
     , mLoadingText(*context.font)
+    , mGameOverScreen(*context.font) 
+    , mWinScreen(*context.font)
 {
     // Dựng các thành phần giao diện
     mGameUI.buildUI();
@@ -80,6 +82,20 @@ PlayingState::PlayingState(StateStack& stack, Context context)
     mLoadingText.setCharacterSize(40);
     mLoadingText.setFillColor(sf::Color(80, 80, 80));
     mLoadingText.setPosition({200.f, 300.f}); // Đặt tạm ra giữa màn hình
+    
+    // THIẾT LẬP CALLBACK CHO 2 MÀN HÌNH OOP MỚI
+    mGameOverScreen.setSecondChanceCallback([this, context]() {
+        context.board->useSecondChance(); 
+        mCurrentState = GameState::Playing; // Tắt popup, quay lại game
+    });
+
+    mGameOverScreen.setNewGameCallback([this]() {
+        requestStackPush("DifficultySelection");
+    });
+
+    mWinScreen.setNewGameCallback([this]() {
+        requestStackPush("DifficultySelection");
+    });
 
     // KÍCH HOẠT ĐA LUỒNG TẠI ĐÂY:
     // Đẩy tác vụ tạo map xuống Background Thread ngay khi vào màn hình chơi
@@ -103,7 +119,14 @@ void PlayingState::draw() {
         window.draw(mGameUI);
         window.draw(mDifficultyBar);
     }
+    // VẼ MÀN HÌNH POPUP 
+        if (mCurrentState == GameState::GameOver) {
+            window.draw(mGameOverScreen);
+        } else if (mCurrentState == GameState::Won) {
+            window.draw(mWinScreen);
+        }
 }
+
 
 void PlayingState::update(const sf::RenderWindow& window) {
     if (mIsGenerating) {
@@ -119,8 +142,16 @@ void PlayingState::update(const sf::RenderWindow& window) {
             mTimer.restart(); 
             
             std::cout << "Generation Complete!\n"; // Báo ra Console để bạn dễ theo dõi
+            mCurrentState = GameState::Playing;
         }
     } else {
+        if (mCurrentState == GameState::Playing) {
+            if (getContext().board->getMistakes() >= 3) {
+                mCurrentState = GameState::GameOver;
+            } else if (getContext().board->isSolved()) {
+                mCurrentState = GameState::Won;
+            }
+        
         // CHỈ CẬP NHẬT GAME BÌNH THƯỜNG KHI ĐÃ LOAD XONG
         mGameUI.setMistakes(getContext().board->getMistakes(), 3);
         mGameUI.update(window);
@@ -136,12 +167,28 @@ void PlayingState::update(const sf::RenderWindow& window) {
                    << std::setfill('0') << std::setw(2) << seconds;
 
         mGameUI.setTime(timeStream.str());
+        }
+        else if (mCurrentState == GameState::GameOver) {
+            mGameOverScreen.update(window); // Chuyển giao trách nhiệm update
+        } 
+        else if (mCurrentState == GameState::Won) {
+            mWinScreen.update(window);      // Chuyển giao trách nhiệm update
+        }
     }
 }
 
 void PlayingState::handleEvent(const sf::Event& event, const sf::RenderWindow& window) {
     // Chặn click bậy khi game đang Load
     if (mIsGenerating) return;
+
+    // CHUYỂN GIAO SỰ KIỆN CHUỘT CHO MÀN HÌNH TƯƠNG ỨNG
+    if (mCurrentState == GameState::GameOver) {
+        mGameOverScreen.handleEvent(event, window);
+        return; 
+    } else if (mCurrentState == GameState::Won) {
+        mWinScreen.handleEvent(event, window);
+        return;
+    }
     
     // 1. Chuyển giao sự kiện click cho các UI
     mGameUI.handleEvent(event, window);

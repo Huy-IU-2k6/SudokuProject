@@ -5,6 +5,8 @@
 #include "gui/GameUI.h"
 #include "gui/DifficultyBar.h"
 #include "gui/SudokuGrid.h"
+#include "gui/GameOverScreen.h"
+#include "gui/WinScreen.h"
 #include <SFML/System/Clock.hpp>
 #include <future>
 
@@ -17,6 +19,9 @@ public:
     void handleEvent(const sf::Event& event, const sf::RenderWindow& window) override;
 
 private:
+    enum class GameState { Playing, GameOver, Won };
+    GameState mCurrentState = GameState::Playing;
+private:
     SudokuGrid mGridView;
     GUI::GameUI mGameUI;
     GUI::DifficultyBar mDifficultyBar;
@@ -24,6 +29,8 @@ private:
     sf::Text mLoadingText;               // Chữ báo hiệu đang load
     std::future<Board> mFutureBoard;     // Tờ giấy hẹn lấy Board
     bool mIsGenerating = false;          // Cờ kiểm tra trạng thái
+    GUI::GameOverScreen mGameOverScreen;
+    GUI::WinScreen mWinScreen;
 };
 
 #endif

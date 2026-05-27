@@ -16,7 +16,7 @@ void Board::setCellValue(int row, int col, int val) {
         mUndoStack.push_back({row, col, grid[row][col].value});
         grid[row][col].value = val;
         
-        // KIỂM TRA ĐÁP ÁN: Khác đáp án thì bật cờ đỏ và cộng lỗi
+        // So đáp án và đếm lỗi
         if (val != mSolution[row][col]) {
             grid[row][col].is_wrong = true;
             mMistakes++;
@@ -56,7 +56,7 @@ void Board::clearBoard() {
         }
     }
     mUndoStack.clear();
-    mMistakes = 0; // RESET LỖI
+    mMistakes = 0; 
 }
 
 void Board::prepareGame() {
@@ -64,14 +64,12 @@ void Board::prepareGame() {
         for (int col = 0; col < 9; ++col) {
             if (grid[row][col].value.has_value()) {
                 grid[row][col].is_fixed = true;
-                // TẨY TRẮNG 1: Đề bài mặc định thì chắc chắn phải đúng, không thể bị đỏ!
-                grid[row][col].is_wrong = false;
+                grid[row][col].is_wrong = false; // Tẩy trắng lỗi AI
             }
         }
     }
     mUndoStack.clear(); 
-    // TẨY TRẮNG 3: Reset toàn bộ án tích (số lỗi) AI vừa gây ra về 0
-    mMistakes = 0;
+    mMistakes = 0; // Reset án tích của AI
 }
 
 void Board::setSolutionValue(int row, int col, int val) {
@@ -103,4 +101,22 @@ void Board::revealSolution() {
 
 int Board::getMistakes() const {
     return mMistakes;
+}
+
+bool Board::isSolved() const {
+    for (int row = 0; row < 9; ++row) {
+        for (int col = 0; col < 9; ++col) {
+            if (!grid[row][col].value.has_value() || grid[row][col].is_wrong) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+void Board::useSecondChance() {
+    if (mMistakes >= 3) {
+        mMistakes = 2; // Khoan hồng
+        undo();        // Hoàn tác bước sai cuối cùng
+    }
 }

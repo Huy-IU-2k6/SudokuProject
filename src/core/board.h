@@ -6,8 +6,8 @@
 
 struct Cell {
     std::optional<int> value; 
-    bool is_fixed = false; // true nếu là số đề bài cho sẵn (khóa cứng)
-    bool is_wrong = false; // true nếu người chơi điền sai luật
+    bool is_fixed = false; 
+    bool is_wrong = false; 
 };
 
 struct MoveRecord {
@@ -28,18 +28,22 @@ public:
     void clearBoard(); 
     void prepareGame(); 
 
-    // 3 HÀM MỚI PHỤC VỤ HINT VÀ SOLUTION
+    // Các hàm Gợi ý & Đáp án
     void setSolutionValue(int row, int col, int val); 
     void revealHint(int row, int col);
     void revealSolution();
     int getMistakes() const;
 
+    // Các hàm Xử lý Thắng / Thua
+    bool isSolved() const;     
+    void useSecondChance();    
+
 private:
     Cell grid[9][9];
     std::vector<MoveRecord> mUndoStack; 
     
-    int mSolution[9][9] = {0}; // Mảng bí mật chứa đáp án
-    int mMistakes = 0;         // Bộ đếm lỗi
+    int mSolution[9][9] = {0}; 
+    int mMistakes = 0;         
 };
 
 #endif
