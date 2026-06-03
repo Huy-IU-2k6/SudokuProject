@@ -6,19 +6,32 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
-add_executable(SudokuProject ${SOURCES})
+# ==========================================
+# CẤU HÌNH TỰ ĐỘNG LẤY ICON CHO WIN & MAC
+# ==========================================
+if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/icon.rc")
+    list(APPEND SOURCES "${CMAKE_SOURCE_DIR}/icon.rc")
+elseif(APPLE AND EXISTS "${CMAKE_SOURCE_DIR}/icon.icns")
+    # Khai báo cho Mac biết file icns là tài nguyên quan trọng
+    set_source_files_properties("${CMAKE_SOURCE_DIR}/icon.icns" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+    list(APPEND SOURCES "${CMAKE_SOURCE_DIR}/icon.icns")
+endif()
 
+# Gắn nhãn MACOSX_BUNDLE để biến game thành ứng dụng Mac chuẩn (.app) thay vì file thực thi đen ngòm
+add_executable(SudokuProject MACOSX_BUNDLE ${SOURCES})
 target_include_directories(SudokuProject PRIVATE src)
 
+if(APPLE)
+    # Cấu hình đính icon vào App Bundle của Mac
+    set_target_properties(SudokuProject PROPERTIES MACOSX_BUNDLE_ICON_FILE "icon.icns")
+endif()
+
 # ==========================================
-# CẤU HÌNH TỰ ĐỘNG TẢI SFML 3.1.0 (FETCH CONTENT)
+# CẤU HÌNH TỰ ĐỘNG TẢI SFML 3.1.0 
 # ==========================================
 include(FetchContent)
 
-# Yêu cầu tải bản Static
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libraries" FORCE)
-
-# TẮT MODULE MẠNG VÀ ÂM THANH ĐỂ TRÁNH LỖI MbedTLS TRÊN LINUX VÀ TĂNG TỐC BUILD!
 set(SFML_BUILD_NETWORK OFF CACHE BOOL "" FORCE)
 set(SFML_BUILD_AUDIO OFF CACHE BOOL "" FORCE)
 
@@ -29,11 +42,10 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(SFML)
 
-# Link thư viện SFML (Chỉ cần Graphics và Window)
 target_link_libraries(SudokuProject PRIVATE SFML::Graphics SFML::Window SFML::System)
 
 # ==========================================
-# TỰ ĐỘNG COPY ASSETS VÀ CPACK CÀI ĐẶT
+# TỰ ĐỘNG COPY ASSETS
 # ==========================================
 add_custom_command(TARGET SudokuProject POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -41,6 +53,9 @@ add_custom_command(TARGET SudokuProject POST_BUILD
     "$<TARGET_FILE_DIR:SudokuProject>/assets"
 )
 
+# ==========================================
+# CẤU HÌNH CPACK - TẠO BỘ CÀI ĐẶT
+# ==========================================
 include(InstallRequiredSystemLibraries)
 
 set(CPACK_PACKAGE_NAME "SudokuProject")
@@ -48,22 +63,30 @@ set(CPACK_PACKAGE_VENDOR "HuyPham")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Sudoku AI Platform")
 set(CPACK_PACKAGE_VERSION "1.0.0")
 
-install(TARGETS SudokuProject DESTINATION bin)
-install(DIRECTORY assets/ DESTINATION bin/assets) 
-
 if(WIN32)
-    set(CPACK_GENERATOR "NSIS") 
-    # --- 2 DÒNG MỚI ĐỂ TẠO ICON START MENU VÀ DESKTOP SHORTCUT ---
-    # Cú pháp: set(CPACK_PACKAGE_EXECUTABLES "Tên_Target_Của_Bạn" "Tên_Hiển_Thị_Ra_Màn_Hình")
-    set(CPACK_PACKAGE_EXECUTABLES "SudokuProject" "Sudoku AI Platform")
+    install(TARGETS SudokuProject DESTINATION .)
+    install(DIRECTORY assets/ DESTINATION assets) 
     
-    # Ra lệnh cho NSIS tự động tạo lối tắt (Shortcut) ngoài Desktop
+    set(CPACK_GENERATOR "NSIS") 
+    set(CPACK_PACKAGE_EXECUTABLES "SudokuProject" "Sudoku AI Platform")
     set(CPACK_CREATE_DESKTOP_LINKS "SudokuProject")
-    # -------------------------------------------------------------
+    
+    if(EXISTS "${CMAKE_SOURCE_DIR}/icon.ico")
+        set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/icon.ico")
+        set(CPACK_NSIS_MUI_UNIICON "${CMAKE_SOURCE_DIR}/icon.ico")
+    endif()
+
 elseif(APPLE)
+    # Trên Mac, phải cài assets chui vào bên trong ruột của file .app để không bị lỗi Font
+    install(TARGETS SudokuProject BUNDLE DESTINATION .)
+    install(DIRECTORY assets/ DESTINATION "SudokuProject.app/Contents/MacOS/assets")
+    
     set(CPACK_GENERATOR "DragNDrop") 
-else()
-    set(CPACK_GENERATOR "DEB") 
+    
+    # Gắn Icon cho cái đĩa cài đặt .dmg của Mac
+    if(EXISTS "${CMAKE_SOURCE_DIR}/icon.icns")
+        set(CPACK_DMG_VOLUME_ICON "${CMAKE_SOURCE_DIR}/icon.icns")
+    endif()
 endif()
 
 include(CPack)
