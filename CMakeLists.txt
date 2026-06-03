@@ -1,28 +1,35 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.16)
 project(SudokuPlatform VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Tự động quét toàn bộ file .cpp trong src/
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
 add_executable(SudokuProject ${SOURCES})
 
-# Thư mục include nội bộ của dự án
 target_include_directories(SudokuProject PRIVATE src)
 
 # ==========================================
-# CẤU HÌNH LIÊN KẾT SFML (CROSS-PLATFORM)
+# CẤU HÌNH TỰ ĐỘNG TẢI SFML 3.1.0 (FETCH CONTENT)
 # ==========================================
-# FIX LINUX: Chuyển các chữ cái thành CHỮ THƯỜNG (graphics window system)
-find_package(SFML COMPONENTS graphics window system REQUIRED)
+include(FetchContent)
 
-# Link thư viện chuẩn của SFML. 
-target_link_libraries(SudokuProject PRIVATE sfml-graphics sfml-window sfml-system)
+# Yêu cầu tải bản Static (liên kết tĩnh) để file .exe chạy không cần đính kèm .dll
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libraries" FORCE)
+
+FetchContent_Declare(
+    SFML
+    GIT_REPOSITORY https://github.com/SFML/SFML.git
+    GIT_TAG 3.1.0
+)
+FetchContent_MakeAvailable(SFML)
+
+# Link thư viện SFML vừa tải vào Game
+target_link_libraries(SudokuProject PRIVATE SFML::Graphics SFML::Window SFML::System)
 
 # ==========================================
-# TỰ ĐỘNG COPY ASSETS VÀO THƯ MỤC BUILD
+# TỰ ĐỘNG COPY ASSETS VÀ CPACK CÀI ĐẶT
 # ==========================================
 add_custom_command(TARGET SudokuProject POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -30,9 +37,6 @@ add_custom_command(TARGET SudokuProject POST_BUILD
     "$<TARGET_FILE_DIR:SudokuProject>/assets"
 )
 
-# ==========================================
-# CẤU HÌNH CPACK TẠO FILE CÀI ĐẶT
-# ==========================================
 include(InstallRequiredSystemLibraries)
 
 set(CPACK_PACKAGE_NAME "SudokuProject")
