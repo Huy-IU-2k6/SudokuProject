@@ -15,13 +15,11 @@ target_include_directories(SudokuProject PRIVATE src)
 # ==========================================
 # CẤU HÌNH LIÊN KẾT SFML (CROSS-PLATFORM)
 # ==========================================
-# Lệnh này tự động quét hệ thống (Win/Mac/Linux) để tìm SFML
-find_package(SFML COMPONENTS Graphics Window System REQUIRED)
+# FIX LINUX: Chuyển các chữ cái thành CHỮ THƯỜNG (graphics window system)
+find_package(SFML COMPONENTS graphics window system REQUIRED)
 
 # Link thư viện chuẩn của SFML. 
-# SFML:: sẽ tự động lo hết các thư viện phụ (freetype, opengl, winmm...) bạn không cần gõ tay nữa!
-target_link_libraries(SudokuProject PRIVATE SFML::Graphics SFML::Window SFML::System)
-
+target_link_libraries(SudokuProject PRIVATE sfml-graphics sfml-window sfml-system)
 
 # ==========================================
 # TỰ ĐỘNG COPY ASSETS VÀO THƯ MỤC BUILD
@@ -42,17 +40,15 @@ set(CPACK_PACKAGE_VENDOR "HuyPham")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Sudoku AI Platform")
 set(CPACK_PACKAGE_VERSION "1.0.0")
 
-# Lệnh cài đặt file thực thi và assets vào máy người dùng
 install(TARGETS SudokuProject DESTINATION bin)
 install(DIRECTORY assets/ DESTINATION bin/assets) 
 
-# Cấu hình định dạng file xuất ra
 if(WIN32)
-    set(CPACK_GENERATOR "NSIS") # Tạo file .exe cài đặt cho Windows
+    set(CPACK_GENERATOR "NSIS") 
 elseif(APPLE)
-    set(CPACK_GENERATOR "DragNDrop") # Tạo file .dmg cho Mac
+    set(CPACK_GENERATOR "DragNDrop") 
 else()
-    set(CPACK_GENERATOR "DEB") # Tạo file .deb cho Ubuntu
+    set(CPACK_GENERATOR "DEB") 
 endif()
 
 include(CPack)

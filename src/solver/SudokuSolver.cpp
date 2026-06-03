@@ -1,6 +1,12 @@
 #include "SudokuSolver.h"
 #include <algorithm>
 
+// THÊM 4 DÒNG NÀY VÀO ĐỂ TƯƠNG THÍCH VỚI TRÌNH BIÊN DỊCH WINDOWS (MSVC)
+#ifdef _MSC_VER
+#include <intrin.h>
+#define __builtin_popcount __popcnt
+#endif
+
 bool SudokuSolver::solve(Board& board, SolverStats& stats) {
     uint16_t rows[9] = {0}, cols[9] = {0}, blocks[9] = {0};
 
