@@ -38,15 +38,15 @@ cd SudokuProject
 2. Configure the project using CMake:
 For Windows (using MinGW):
 
-Bash
+```bash
 cmake -S . -B build -G "MinGW Makefiles" --fresh
 For macOS or Windows (using MSVC):
 
-Bash
+```bash
 cmake -S . -B build --fresh
 3. Build the executable:
 
-Bash
+```bash
 cmake --build build --config Release
 (Note: The initial build will take a few minutes as CMake will download the SFML source code and compile it locally).
 
@@ -56,10 +56,10 @@ Once the build is complete, the executable and the required assets/ folder will 
 On Windows:
 Navigate to the build folder and double-click SudokuProject.exe, or run:
 
-Bash
+```bash
 .\build\SudokuProject.exe
 On macOS:
 Navigate to the build folder and open the App Bundle:
 
-Bash
+```bash
 open build/SudokuProject.app
