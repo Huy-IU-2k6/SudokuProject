@@ -53,6 +53,13 @@ install(DIRECTORY assets/ DESTINATION bin/assets)
 
 if(WIN32)
     set(CPACK_GENERATOR "NSIS") 
+    # --- 2 DÒNG MỚI ĐỂ TẠO ICON START MENU VÀ DESKTOP SHORTCUT ---
+    # Cú pháp: set(CPACK_PACKAGE_EXECUTABLES "Tên_Target_Của_Bạn" "Tên_Hiển_Thị_Ra_Màn_Hình")
+    set(CPACK_PACKAGE_EXECUTABLES "SudokuProject" "Sudoku AI Platform")
+    
+    # Ra lệnh cho NSIS tự động tạo lối tắt (Shortcut) ngoài Desktop
+    set(CPACK_CREATE_DESKTOP_LINKS "SudokuProject")
+    # -------------------------------------------------------------
 elseif(APPLE)
     set(CPACK_GENERATOR "DragNDrop") 
 else()
