@@ -46,7 +46,7 @@ Ensure your system has the following tools installed and added to your system `P
 
 **1. Clone the repository:**
 ```bash
-git clone [https://github.com/Huy-IU-2k6/SudokuProject.git](https://github.com/Huy-IU-2k6/SudokuProject.git)
+git clone https://github.com/Huy-IU-2k6/SudokuProject
 cd SudokuProject
 
 ```
