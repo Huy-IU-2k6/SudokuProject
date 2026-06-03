@@ -9,38 +9,50 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 
 add_executable(SudokuProject ${SOURCES})
 
-# Thư mục include nội bộ của dự án và SFML
-target_include_directories(SudokuProject PRIVATE 
-    src 
-    "D:/SFML/SFML-3.1.0-windows-gcc-14.2.0-mingw-64-bit/SFML-3.1.0/include"
-)
+# Thư mục include nội bộ của dự án
+target_include_directories(SudokuProject PRIVATE src)
 
-# Chỉ đường dẫn cho Linker mò vào thư mục chứa file .a của bạn
-target_link_directories(SudokuProject PRIVATE
-    "D:/SFML/SFML-3.1.0-windows-gcc-14.2.0-mingw-64-bit/SFML-3.1.0/lib"
-)
+# ==========================================
+# CẤU HÌNH LIÊN KẾT SFML (CROSS-PLATFORM)
+# ==========================================
+# Lệnh này tự động quét hệ thống (Win/Mac/Linux) để tìm SFML
+find_package(SFML COMPONENTS Graphics Window System REQUIRED)
 
-# Bật định nghĩa Macro STATIC cho Compiler biết
-target_compile_definitions(SudokuProject PRIVATE SFML_STATIC)
+# Link thư viện chuẩn của SFML. 
+# SFML:: sẽ tự động lo hết các thư viện phụ (freetype, opengl, winmm...) bạn không cần gõ tay nữa!
+target_link_libraries(SudokuProject PRIVATE SFML::Graphics SFML::Window SFML::System)
 
- 
-# vì chúng phá hỏng cấu trúc do lỗi file cấu hình đi kèm gói tải về.
-# Chúng ta sẽ link trực tiếp bằng tên file tĩnh (.a) có sẵn trong folder lib của bạn.
 
-target_link_libraries(SudokuProject PRIVATE
-    sfml-graphics-s
-    sfml-window-s
-    sfml-system-s
-    freetype           # Thằng này gọi HarfBuzz
-    harfbuzz           # FIX: Thêm HarfBuzz vào đây để giải quyết các lỗi hb_
-    opengl32
-    winmm
-    gdi32
-    user32
-)
-# Tự động copy thư mục assets vào chung chỗ với file .exe khi build
+# ==========================================
+# TỰ ĐỘNG COPY ASSETS VÀO THƯ MỤC BUILD
+# ==========================================
 add_custom_command(TARGET SudokuProject POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_SOURCE_DIR}/assets"
     "$<TARGET_FILE_DIR:SudokuProject>/assets"
 )
+
+# ==========================================
+# CẤU HÌNH CPACK TẠO FILE CÀI ĐẶT
+# ==========================================
+include(InstallRequiredSystemLibraries)
+
+set(CPACK_PACKAGE_NAME "SudokuProject")
+set(CPACK_PACKAGE_VENDOR "HuyPham")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Sudoku AI Platform")
+set(CPACK_PACKAGE_VERSION "1.0.0")
+
+# Lệnh cài đặt file thực thi và assets vào máy người dùng
+install(TARGETS SudokuProject DESTINATION bin)
+install(DIRECTORY assets/ DESTINATION bin/assets) 
+
+# Cấu hình định dạng file xuất ra
+if(WIN32)
+    set(CPACK_GENERATOR "NSIS") # Tạo file .exe cài đặt cho Windows
+elseif(APPLE)
+    set(CPACK_GENERATOR "DragNDrop") # Tạo file .dmg cho Mac
+else()
+    set(CPACK_GENERATOR "DEB") # Tạo file .deb cho Ubuntu
+endif()
+
+include(CPack)

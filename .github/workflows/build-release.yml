@@ -1,0 +1,54 @@
+name: Build Sudoku Multi-Platform
+
+# Kích hoạt Workflow khi bạn push code lên nhánh main hoặc tạo một Tag mới (ví dụ v1.0)
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    
+    # Thiết lập chạy song song trên cả 3 hệ điều hành
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    steps:
+    # 1. Lấy mã nguồn từ GitHub về máy ảo
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    # 2. Cài đặt các thư viện phụ thuộc cho Linux (SFML cần các thư viện đồ họa này để build)
+    - name: Install Linux Dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libxrandr-dev libxcursor-dev libudev-dev libfreetype-dev libopenal-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev xorg-dev
+
+    # 3. Cấu hình CMake (Tạo thư mục build)
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+    # 4. Biên dịch mã nguồn (Build)
+    - name: Build Project
+      run: cmake --build build --config Release
+
+    # 5. Chạy CPack để đóng gói Installer
+    - name: Run CPack
+      working-directory: build
+      run: cpack -C Release
+
+    # 6. Upload file Cài đặt (Installer) lên GitHub
+    - name: Upload Installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: Sudoku-Installer-${{ runner.os }}
+        path: |
+          build/*.exe
+          build/*.dmg
+          build/*.deb
+        if-no-files-found: warn
