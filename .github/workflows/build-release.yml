@@ -13,34 +13,33 @@ jobs:
     
     strategy:
       fail-fast: false 
+      # ĐÃ XÓA UBUNTU, CHỈ CÒN WIN VÀ MAC
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, macos-latest]
 
     steps:
     - name: Checkout Source Code
       uses: actions/checkout@v4
 
-    - name: Install Linux Core Dependencies
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libxrandr-dev libxcursor-dev libudev-dev libfreetype-dev libgl1-mesa-dev libegl1-mesa-dev xorg-dev
-
-    # THÊM BƯỚC NÀY ĐỂ FIX LỖI CPACK NSIS TRÊN WINDOWS
+    # Tải NSIS để đóng gói file cài đặt .exe cho Windows
     - name: Install NSIS (Windows)
       if: matrix.os == 'windows-latest'
       run: choco install nsis -y
 
+    # Cấu hình CMake
     - name: Configure CMake
       run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
+    # Build Project
     - name: Build Project
       run: cmake --build build --config Release
 
+    # Đóng gói Installer
     - name: Run CPack
       working-directory: build
       run: cpack -C Release
 
+    # Upload thành quả
     - name: Upload Installer
       uses: actions/upload-artifact@v4
       with:
@@ -48,5 +47,4 @@ jobs:
         path: |
           build/*.exe
           build/*.dmg
-          build/*.deb
         if-no-files-found: warn
