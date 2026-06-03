@@ -1,6 +1,5 @@
 name: Build Sudoku Multi-Platform
 
-# Kích hoạt Workflow khi bạn push code lên nhánh main hoặc tạo một Tag mới (ví dụ v1.0)
 on:
   push:
     branches: [ "main" ]
@@ -12,8 +11,8 @@ jobs:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     
-    # Thiết lập chạy song song trên cả 3 hệ điều hành
     strategy:
+      fail-fast: false # THÊM DÒNG NÀY: Không hủy các máy khác nếu 1 máy bị lỗi
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
 
@@ -22,31 +21,52 @@ jobs:
     - name: Checkout Source Code
       uses: actions/checkout@v4
 
-    # 2. Cài đặt các thư viện phụ thuộc cho Linux (SFML cần các thư viện đồ họa này để build)
-    - name: Install Linux Dependencies
-      if: runner.os == 'Linux'
+    # 2. Tự động tải SFML và dependencies trên Ubuntu (Linux)
+    - name: Install SFML (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        sudo apt-get install -y libxrandr-dev libxcursor-dev libudev-dev libfreetype-dev libopenal-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev xorg-dev
+        sudo apt-get install -y libsfml-dev libxrandr-dev libxcursor-dev libudev-dev libfreetype-dev libopenal-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev xorg-dev
 
-    # 3. Cấu hình CMake (Tạo thư mục build)
-    - name: Configure CMake
+    # 3. Tự động tải SFML trên macOS
+    - name: Install SFML (macOS)
+      if: matrix.os == 'macos-latest'
+      run: brew install sfml
+
+    # 4. Tự động tải SFML trên Windows (Dùng vcpkg có sẵn của GitHub)
+    - name: Install SFML (Windows)
+      if: matrix.os == 'windows-latest'
+      run: vcpkg install sfml:x64-windows
+
+    # 5a. Cấu hình CMake cho Ubuntu (Linux)
+    - name: Configure CMake (Linux)
+      if: matrix.os == 'ubuntu-latest'
       run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
-    # 4. Biên dịch mã nguồn (Build)
+    # 5b. Cấu hình CMake cho macOS (ĐÃ FIX LỖI ĐƯỜNG DẪN HOMEBREW MAC M1/M2)
+    - name: Configure CMake (macOS)
+      if: matrix.os == 'macos-latest'
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$(brew --prefix sfml)
+
+    # 5c. Cấu hình CMake cho Windows (Trỏ tới vcpkg)
+    - name: Configure CMake (Windows)
+      if: matrix.os == 'windows-latest'
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+
+    # 6. Biên dịch mã nguồn (Build)
     - name: Build Project
       run: cmake --build build --config Release
 
-    # 5. Chạy CPack để đóng gói Installer
+    # 7. Chạy CPack để đóng gói Installer
     - name: Run CPack
       working-directory: build
       run: cpack -C Release
 
-    # 6. Upload file Cài đặt (Installer) lên GitHub
+    # 8. Upload file Cài đặt (Installer) lên GitHub
     - name: Upload Installer
       uses: actions/upload-artifact@v4
       with:
-        name: Sudoku-Installer-${{ runner.os }}
+        name: Sudoku-Installer-${{ matrix.os }}
         path: |
           build/*.exe
           build/*.dmg
