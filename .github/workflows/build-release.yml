@@ -20,13 +20,16 @@ jobs:
     - name: Checkout Source Code
       uses: actions/checkout@v4
 
-    # Chỉ cài các gói đồ họa nền tảng (OpenGL, X11) cho Linux. 
-    # KHÔNG cài SFML nữa, CMake sẽ tự tải SFML 3.1.0!
     - name: Install Linux Core Dependencies
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        sudo apt-get install -y libxrandr-dev libxcursor-dev libudev-dev libfreetype-dev libopenal-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev xorg-dev
+        sudo apt-get install -y libxrandr-dev libxcursor-dev libudev-dev libfreetype-dev libgl1-mesa-dev libegl1-mesa-dev xorg-dev
+
+    # THÊM BƯỚC NÀY ĐỂ FIX LỖI CPACK NSIS TRÊN WINDOWS
+    - name: Install NSIS (Windows)
+      if: matrix.os == 'windows-latest'
+      run: choco install nsis -y
 
     - name: Configure CMake
       run: cmake -B build -DCMAKE_BUILD_TYPE=Release

@@ -15,8 +15,12 @@ target_include_directories(SudokuProject PRIVATE src)
 # ==========================================
 include(FetchContent)
 
-# Yêu cầu tải bản Static (liên kết tĩnh) để file .exe chạy không cần đính kèm .dll
+# Yêu cầu tải bản Static
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libraries" FORCE)
+
+# TẮT MODULE MẠNG VÀ ÂM THANH ĐỂ TRÁNH LỖI MbedTLS TRÊN LINUX VÀ TĂNG TỐC BUILD!
+set(SFML_BUILD_NETWORK OFF CACHE BOOL "" FORCE)
+set(SFML_BUILD_AUDIO OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
     SFML
@@ -25,7 +29,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(SFML)
 
-# Link thư viện SFML vừa tải vào Game
+# Link thư viện SFML (Chỉ cần Graphics và Window)
 target_link_libraries(SudokuProject PRIVATE SFML::Graphics SFML::Window SFML::System)
 
 # ==========================================
